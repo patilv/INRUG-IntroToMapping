@@ -1,7 +1,7 @@
 ---
 title: "Getting Started with Geographic Data Displays using R"
 author: | 
-  | Vivek H. Patil, Ph.D.
+  | Vivek H. Patil
   | Associate Professor of Marketing, Gonzaga University
 date: "August 14, 2015"
 output:
@@ -21,6 +21,11 @@ library(knitr)
 opts_chunk$set(warning=FALSE, message=FALSE)
 
 ```
+
+## CRAN Task View on Spatial Data
+
+<iframe src="https://cran.r-project.org/web/views/Spatial.html"></iframe>
+
 
 ## Geographic Data Display
 
@@ -287,4 +292,4 @@ Some cool stuff possible:[http://bit.ly/INRUGMapShiny](http://bit.ly/INRUGMapShi
 * Ari Lamstein: [http://www.arilamstein.com/](http://www.arilamstein.com/)
 * Kyle Walker: [http://walkerke.github.io/](http://walkerke.github.io/)
 * Erik Erhardt: [http://statacumen.com/](http://statacumen.com/)
-<h4> Thanks due to many package developers and the wonderful R community.
+<h4> Thanks are due to the many package developers and the wonderful R community.
