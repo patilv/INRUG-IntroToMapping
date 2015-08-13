@@ -1,5 +1,5 @@
 ---
-title: "Geo"
+title: "Getting Started with Geographic Data Displays using R"
 author: | 
   | Vivek H. Patil, Ph.D.
   | Associate Professor of Marketing, Gonzaga University
