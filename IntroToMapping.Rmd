@@ -1,0 +1,290 @@
+---
+title: "Geo"
+author: | 
+  | Vivek H. Patil, Ph.D.
+  | Associate Professor of Marketing, Gonzaga University
+date: "August 14, 2015"
+output:
+  ioslides_presentation:
+    smaller: yes
+    theme: spacelab
+    widescreen: yes
+---
+
+<style>
+.title-slide hgroup h1 {color: red;}
+h2 {color: red;}
+</style>
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(warning=FALSE, message=FALSE)
+
+```
+
+## Geographic Data Display
+
+* Points, Regions, Routes
+* Variables can be continuous and/or discrete data
+* Static or Interactive
+
+## Choropleths
+```{r}
+library(choroplethr)
+library(choroplethrMaps)
+data(df_state_demographics)
+names(df_state_demographics)
+```
+
+## Choropleths
+```{r}
+kable(head(df_state_demographics))
+```
+
+## Median Rent: State-level
+```{r}
+
+dfstatemedrent=df_state_demographics[,c(1,8)] # Median Rent
+colnames(dfstatemedrent)=c("region","value")
+state_choropleth(dfstatemedrent, title="Median Rent by State")
+```
+
+## Median Rent: County-level
+
+```{r}
+data("df_county_demographics")
+#names(df_county_demographics)
+# Federal Information Processing Standard (FIPS) https://en.wikipedia.org/wiki/FIPS_county_code
+kable(head(df_county_demographics))
+```
+
+## Median Rent: County-level
+```{r}
+dfcountymedrent=df_county_demographics[,c(1,8)] 
+colnames(dfcountymedrent)=c("region","value")
+county_choropleth(dfcountymedrent, title="Median Rent by County")
+```
+
+## Population: Specific County/ZCTA
+```{r}
+library(choroplethrZip)#devtools::install_github("arilamstein/choroplethrZip")
+#Zip Code Tabulation Areas are generalized area representations of the United States Postal Service (USPS) ZIP code service areas
+library(ggplot2)
+data("df_zip_demographics")
+kable(head(df_zip_demographics))
+```
+
+## Population: Washington
+
+```{r}
+dfzipmedrent=df_zip_demographics[,c(1,8)] 
+colnames(dfzipmedrent)=c("region","value")
+zip_choropleth(dfzipmedrent,state_zoom="washington")+coord_map() #adds mercator projection
+```
+
+## Population: Spokane County (FIPS 53063)
+
+```{r}
+
+zip_choropleth(dfzipmedrent, county_zoom=53063) + coord_map()
+```
+
+## Interactive map using leaflet, tigris and acs
+
+```{r echo=FALSE}
+# Kyle Walker's code has come in very handy
+# install and load the packages 
+library(leaflet)
+library(tigris) #devtools::install_github('walkerke/tigris')
+library(acs)
+library(stringr)
+#lookup_code("Washington","Spokane") #"FIPS code for Washington is '53' and the code for Spokane County is '063'."
+spcounty=tracts(state="53",county="063")
+# 
+# #api.key.install(" YOUR API KEY GOES HERE") 
+# 
+# geography=geo.make(state="Washington",county="Spokane",tract="*") # from acs package
+# rent_data <- acs.fetch(endyear = 2013, 
+#                          geography = geography,
+#                          variable = "B25064_001")
+# 
+# 
+# 
+# rent_df <- data.frame(paste0(as.character(rent_data@geography$state), 
+#                                as.character(rent_data@geography$county), 
+#                                rent_data@geography$tract), 
+#                         rent_data@estimate)
+# 
+# save(rent_df,file="rent_df.Rda")
+load("rent_df.Rda")
+
+
+
+colnames(rent_df) <- c("GEOID", "hhrent")
+
+rent_df$GEOID=as.character(rent_df$GEOID)
+rent_df$GEOID=str_replace(rent_df$GEOID,"536","5306")
+
+spcounty_merged=geo_join(spcounty, rent_df, "GEOID", "GEOID")
+
+
+pal <- colorQuantile("Blues", NULL, n = 4)
+popup <- paste0("Median gross rent: ", as.character(spcounty_merged$hhrent))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = spcounty_merged, 
+              fillColor = ~pal(spcounty_merged$hhrent), 
+              fillOpacity = 0.7, 
+              weight = 0.2, 
+              popup = popup) %>%
+  addLegend(pal = pal, 
+            values = spcounty_merged$hhrent, 
+            position = "bottomright", 
+            title = "Median Gross Rent")
+```
+  
+## Points
+
+```{r}
+thingstodo=read.table(text="
+                      Attraction  lat lon  Population
+                      Jepson  47.667268 -117.405114 45
+                      Starbucks  47.669088 -117.396847  50
+                      WSU 47.660960 -117.405697 250
+                      EWU 47.661061 -117.404044 400",header=TRUE)
+```
+
+## Geocoding, if only address is available
+
+```{r}
+
+library(ggmap)
+
+whatislatlon=function(mydata,addressindata){
+locs=geocode(as.character(unique(mydata[,addressindata])))
+locs$address=unique(mydata[,addressindata])
+mydata$latitude=locs$lat[ match(mydata[,addressindata],locs$address)]
+mydata$longitude=locs$lon[ match(mydata[,addressindata],locs$address)]
+return(mydata)
+}
+```
+
+## That function works
+
+```{r}
+
+Address=c("502 E Boone Ave, Spokane, WA, 99258","502 E Boone Ave, Spokane, WA, 99258")
+mydummydata=data.frame(Address=Address)
+mysmartdata=whatislatlon(mydummydata,"Address")
+kable(mysmartdata)
+```
+
+## A map of location of interest
+
+```{r }
+location=c(-117.402209,47.665330)
+map=get_map(location=location,maptype="roadmap",source="google",zoom=16)
+spokanemap=ggmap(map)
+print(spokanemap)
+```
+
+## Add Attractions
+```{r}
+spokanemap=spokanemap+geom_point(data=thingstodo,
+            aes(lon,lat,color=Attraction),size=5)
+print(spokanemap)
+```
+
+## Some Cleaning
+
+```{r}
+spokanemap+theme(panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                axis.text = element_blank(),axis.title = element_blank(),
+                axis.ticks = element_blank())
+```
+
+## A traveling student's route
+
+```{r}
+routes=data.frame(x=thingstodo$lon,y=thingstodo$lat)
+newmap=get_googlemap(center=location,zoom=16,
+                     markers=routes,
+                     path = routes,scale=2,maptype = "satellite")
+ggmap(newmap,darken=.3)+geom_text(data=thingstodo,aes(lon,lat,label=Attraction),
+                                                  color="white",size=3)
+```
+
+## R-Studio's `leaflet` package
+
+* Interface to `leaflet` JS  
+```{r}
+library(leaflet) #rstudio package
+leaflet() %>% addTiles()
+```
+
+## Add our points of attraction
+```{r}
+leaflet() %>% addTiles()%>%addCircleMarkers(data=thingstodo)
+```
+
+## Give more information
+```{r}
+leaflet() %>% addTiles()%>%addCircleMarkers(data=thingstodo,popup=~Attraction,radius=~Population*.05)
+```
+
+## Markers
+```{r}
+leaflet() %>% addTiles()%>%addMarkers(data=thingstodo,popup=~Attraction)
+```
+
+## Routes
+
+```{r}
+leaflet() %>% addTiles()%>%addMarkers(data=thingstodo,popup=~Attraction)%>% 
+  addPolylines(thingstodo$lon,thingstodo$lat)
+```
+
+## Few Controls
+```{r echo=FALSE}
+leaflet() %>% addTiles(group = "OSM (default)") %>%
+  addProviderTiles("Stamen.Toner", group = "Toner") %>%
+  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+  addMarkers(data=thingstodo,popup=~Attraction)%>% 
+  addPolylines(thingstodo$lon,thingstodo$lat,group="Route")%>%
+  addLayersControl(
+    baseGroups = c("OSM (default)", "Toner", "Toner Lite"),
+    overlayGroups = c("Route"),
+    options = layersControlOptions(collapsed = FALSE)
+  )%>% hideGroup("Route")
+```
+
+## Leaflet+Shiny+DataTable
+
+Some cool stuff possible:[http://bit.ly/INRUGMapShiny](http://bit.ly/INRUGMapShiny)
+
+## Blog example 1: Air Pollution Levels
+[http://patilv.com/airpollution/](http://patilv.com/airpollution/)
+<iframe src="http://patilv.github.io/Airpollutionpm/topcitiespm10map.html"></iframe>
+
+## Blog example 2: Mortality Rates of Children under 5 per 1000 live births
+
+[http://patilv.com/MortalityUnder5/](http://patilv.com/MortalityUnder5/)
+<iframe src="http://bl.ocks.org/patilv/raw/410a1de459998f35599a/"></iframe>
+
+## Blog example 3: Animated Choropleths
+
+[http://bit.ly/patilanimatedchoropleths](http://bit.ly/patilanimatedchoropleths)
+
+## Blog example 4: Great Circles
+[http://patilv.com/USOpenCountries/](http://patilv.com/USOpenCountries/)
+<img src="playernationalitymap.png" width=900 height=700>
+
+## Code used is borrowed from many folks including: 
+
+* R-Studio: [https://rstudio.github.io/leaflet/](https://rstudio.github.io/leaflet/)
+* Ari Lamstein: [http://www.arilamstein.com/](http://www.arilamstein.com/)
+* Kyle Walker: [http://walkerke.github.io/](http://walkerke.github.io/)
+* Erik Erhardt: [http://statacumen.com/](http://statacumen.com/)
+<h4> Thanks due to many package developers and the wonderful R community.
