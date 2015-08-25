@@ -267,7 +267,7 @@ leaflet() %>% addTiles(group = "OSM (default)") %>%
 
 ## Leaflet+Shiny+DataTable
 
-Some cool stuff possible:[http://bit.ly/INRUGMapShiny](http://bit.ly/INRUGMapShiny)
+Some cool stuff possible:[http://147.222.28.7/INRUG-ShinyApp/](http://147.222.28.7/INRUG-ShinyApp/)
 
 ## Blog example 1: Air Pollution Levels
 [http://patilv.com/airpollution/](http://patilv.com/airpollution/)
