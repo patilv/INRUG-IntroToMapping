@@ -79,19 +79,35 @@ data("df_zip_demographics")
 kable(head(df_zip_demographics))
 ```
 
-## Population: Washington
+## Population Density Choropleths
+Use population density (population per area) rather than raw count for a sound spatial analysis. A good explanation of the trouble with choropleth maps of raw count data is available in Monmonier, Mark, _Mapping It Out: Expository Cartography for the Humanities and Social Sciences_ (1993: University of Chicago Press, Chicago). Pages 159-167.
 
-```{r}
-dfzipmedrent=df_zip_demographics[,c(1,8)] 
-colnames(dfzipmedrent)=c("region","value")
-zip_choropleth(dfzipmedrent,state_zoom="washington")+coord_map() #adds mercator projection
+```{r pop density intro}
+library(dplyr)
+data(zip.map)  #Pull ZCTA area from `choroplethrZip` package data sets to compute density
+zarea <- zip.map %>% group_by(region) %>% 
+  summarize(zland = first(ALAND10), zwater = first(AWATER10))
+df_pop_zip <- df_pop_zip %>% merge(zarea, all.x = TRUE)
+df_pop_zip$popdensity <- with(df_pop_zip, count / (zland + zwater) * 1000 ^ 2)
+kable(head(df_pop_zip))
 ```
 
-## Population: Spokane County (FIPS 53063)
 
-```{r}
+## Population Density: Washington
 
-zip_choropleth(dfzipmedrent, county_zoom=53063) + coord_map()
+Use an equal area projection since the measure is normalized by area.
+
+```{r wash state pop density}
+df_pop_zip$value <- df_pop_zip$popdensity
+zip_choropleth(df_pop_zip, state_zoom = 'washington', legend = 'Count per km^2') + 
+  coord_map(projection = 'albers', lat0 = 41, lat1 = 47)  # equal area projection for pacific NW  http://spatialreference.org/ref/sr-org/nad83-us-pacific-northwest-albers/html/
+```
+
+## Population Density: Spokane County (FIPS 53063)
+
+```{r county zcta pop density}
+zip_choropleth(df_pop_zip, county_zoom = 53063,  legend = 'Count per km^2') + 
+  coord_map(projection = 'albers', lat0 = 41, lat1 = 47)
 ```
 
 ## Interactive map using leaflet, tigris and acs
